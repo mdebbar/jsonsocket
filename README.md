@@ -11,7 +11,7 @@ Examples:
 from jsonsocket import Client, Server
 
 host = 'localhost'
-port = '8000'
+port = 8000
 
 # Client code:
 client = Client()

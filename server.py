@@ -5,7 +5,10 @@ import socket
 import sys
 import select
 import threading
+import datetime
 from SYNNG.events.events import request
+import time
+
 
 class Server:
 
@@ -54,17 +57,23 @@ class Server:
 
 class Client(threading.Thread):
 
-    def __init__(self,temp,SYNNG):
+    def __init__(self, temp, SYNNG):
         threading.Thread.__init__(self)
         (self.client, self.address) = temp
         self.SYNNG = SYNNG
         self.size = 1024
+        self.latency = 0.2
 
     def run(self):
         running = 1
         while running:
+            start = datetime.datetime.now()
             data = _recv(self.client)
             response = self.SYNNG.addRequest(request('placeOrders', json.dumps(data)))
+            latency = (datetime.datetime.now() - start).total_seconds()
+            diff = self.latency - latency
+            if diff > 0:
+                time.sleep(diff)
             if data:
                 _send(self.client, response)
             else:

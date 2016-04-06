@@ -1,31 +1,14 @@
-jsonsocket
-==========
+json socket utility
+===================
 
-This is a small Python library for sending data over sockets.
+This is a simple python utility for sending json data when using sockets.
 
-It allows sending lists, dictionaries, strings, etc. It can handle very large data (I've tested it with 10GB of data). Any JSON-serializable data is accepted.
+It allows sending lists, dictionaries, strings, etc. It can handle very large data (It has been tested with 10GB of data). Any JSON-serializable data is accepted.
 
-Examples:
+these two functions don't require re-write/over-writing the socket library and are python3 compatible.
 
-```python
-from jsonsocket import Client, Server
+get a taste for using sockets here: http://tutorialspoint.com/python/python_networking.htm
 
-host = 'localhost'
-port = '8000'
+an example of working with json data over sockets can be found here: http://github.com/chris-rose-one/battleship
 
-# Client code:
-client = Client()
-client.connect(host, port).send({'some_list': [123, 456]})
-response = client.recv()
-# response now is {'data': {'some_list': [123, 456]}}
-client.close()
-
-
-# Server code:
-server = Server(host, port)
-server.accept()
-data = server.recv()
-# data now is: {'some_list': [123, 456]}
-server.send({'data': data}).close()
-
-```
+thanks @mdebbar this code has been quite helpful

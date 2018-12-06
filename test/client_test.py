@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from jsonsocket import Client, Server
+from jsonsocket.jsonsocket import Client
 
 host = 'localhost'
 port = 8001

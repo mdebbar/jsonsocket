@@ -1,4 +1,4 @@
-from jsonsocket import Server
+from jsonsocket.jsonsocket import Server
 
 host = 'localhost'
 port = 8001

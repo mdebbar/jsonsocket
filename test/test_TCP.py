@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from jsonsocket.tcp import ThreadedServer, Client
+from jsonsocket.tcp import ServerAsync, Client
 
 
 def new_client(addr, _srv):
@@ -20,7 +20,7 @@ def disconnect_client(addr, _srv):
 class TestTCP(TestCase):
     def test_general(self):
         port = 1234
-        srv = ThreadedServer("localhost", port, new_client, new_data, disconnect_client, timeout=1)
+        srv = ServerAsync("localhost", port, new_client, new_data, disconnect_client, timeout=1)
 
         with srv:
             cl = Client()
@@ -35,7 +35,7 @@ class TestTCP(TestCase):
     def test_numpy(self):
         import numpy as np
         port = 1237
-        srv = ThreadedServer("localhost", port, new_client, new_data, disconnect_client, timeout=1)
+        srv = ServerAsync("localhost", port, new_client, new_data, disconnect_client, timeout=1)
 
         payload = {"numpy": np.linspace(0, 1, 9)}
         with srv:
@@ -53,7 +53,7 @@ class TestTCP(TestCase):
         from pandas import DataFrame
 
         port = 1236
-        srv = ThreadedServer("localhost", port, new_client, new_data, disconnect_client, timeout=1)
+        srv = ServerAsync("localhost", port, new_client, new_data, disconnect_client, timeout=1)
 
         payload = DataFrame(dict(A=[1, 2, 3], B=[4, 5, 6]))
         with srv:

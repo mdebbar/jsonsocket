@@ -1,4 +1,6 @@
 import socket
+
+from jsonsocket.constants import broadcast_address
 from jsonsocket.helpers import send as _send, receive as _recv
 
 from jsonsocket.udp_async import Receiver, Advertiser
@@ -10,15 +12,21 @@ class UDP(object):
 
     def receive(self, host, port, timeout=None):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        if host == "broadcast":
+        if host == broadcast_address:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        s.bind((host, port))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            s.bind((host, port))
+        except socket.error:
+            raise Exception("Address %s:%i already in use" % (host,port))
         data, addr = _recv(s, timeout=timeout,socket_type="udp")
         return data, addr
 
     def send(self, data, ip, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        _send(s, data, "udp", (ip, port))
+        if ip == broadcast_address:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        _send(s, data, "udp", ip, port)
 
     @property
     def receiving(self):

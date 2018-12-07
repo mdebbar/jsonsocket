@@ -2,15 +2,8 @@
 import socket
 from threading import Thread
 
+from jsonsocket.errors import NoClient, ConnectFirst
 from jsonsocket.helpers import send as _send, receive as _recv, TimeoutError
-
-class NoClient(Exception):
-    def __init__(self):
-        super(NoClient, self).__init__('Cannot send data, no client is connected')
-
-class ConnectFirst(Exception):
-    def __init__(self):
-        super(ConnectFirst, self).__init__('You have to connect first before sending data')
 
 
 class Server(object):
@@ -54,13 +47,14 @@ class Server(object):
         _send(self.client, data, socket_type="tcp")
         return self
 
-    def recv(self, **kwargs):
+    def recv(self, close_on_timeout=False, **kwargs):
         if not self.client:
             raise NoClient()
         try:
-            res = _recv(self.client, socket_type="udp", **kwargs)
+            res = _recv(self.client, socket_type="tcp", **kwargs)
         except TimeoutError:
-            self.close()
+            if close_on_timeout:
+                self.close()
             return None
         return res
 
@@ -107,13 +101,13 @@ class Client(object):
         _send(self.socket, data, socket_type="tcp")
         return self
 
-    def recv(self):
+    def recv(self, **kwargs):
         if not self.socket:
             raise ConnectFirst()
-        return _recv(self.socket, socket_type="tcp")
+        return _recv(self.socket, socket_type="tcp", **kwargs)
 
-    def recv_and_close(self):
-        data = self.recv()
+    def recv_and_close(self, **kwargs):
+        data = self.recv(**kwargs)
         self.close()
         return data
 
@@ -123,10 +117,11 @@ class Client(object):
             self.socket = None
 
 
-class ThreadedServer(Thread):
+class ServerAsync(Thread):
     def __init__(self, host, port, new_client_callback, new_message_callback, client_disconnect_callback=None,
-                 timeout=5):
-        super(ThreadedServer, self).__init__()
+                 exception_callback=None, timeout=5):
+        super(ServerAsync, self).__init__()
+        self.exception_callback = exception_callback
         self.client_disconnect_callback = client_disconnect_callback
         self.timeout = timeout
         self.new_message_callback = new_message_callback
@@ -138,24 +133,39 @@ class ThreadedServer(Thread):
         self.__running = False
 
     def run(self):
-        self.__running = True
+        try:
+            self.__running = True
 
-        while self.__running:
-            self.server.accept()
-            client_addr = self.server.client_addr
-            self.new_client_callback(client_addr, self)
-            while 1:
-                try:
-                    data = self.server.recv(timeout=self.timeout)
-                except (NoClient, socket.error):
-                    break
-                if data is not None:
-                    self.new_message_callback(data, self)
-            if self.client_disconnect_callback:
-                self.client_disconnect_callback(client_addr, self)
+            while self.__running:
+                self.server.accept()
+                client_addr = self.server.client_addr
+                if self.new_client_callback:
+                    self.new_client_callback(client_addr, self)
+                while 1:
+                    try:
+                        data = self.server.recv(timeout=self.timeout)
+                    except (NoClient, socket.error):
+                        break
+                    if data is not None:
+                        self.new_message_callback(data, self)
+                if self.client_disconnect_callback:
+                    self.client_disconnect_callback(client_addr, self)
+        except Exception as e:
+            if self.exception_callback:
+                self.exception_callback(e)
+            else:
+                raise
 
     def send(self, data):
         self.server.send(data)
+
+    @property
+    def client_addr(self):
+        return self.server.client_addr
+
+    @property
+    def client(self):
+        return self.server.client
 
     def __enter__(self):
         self.start()

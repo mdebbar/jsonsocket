@@ -17,9 +17,24 @@ class BetterEncoder(json.JSONEncoder):
         if use_numpy and isinstance(obj, np.ndarray):
             return obj.tolist()
 
-        if use_pandas and (isinstance(obj, pd.DataFrame) or isinstance(obj, pd.Series)):
-            res = dict(_decode_type=obj.__class__.__name__, _content=obj.to_dict())
-            return res
+        if use_pandas:
+            typename = obj.__class__.__name__
+            res=None
+            if isinstance(obj, pd.DataFrame):
+                content = dict(zip(obj.columns, obj.values.T.tolist()))
+                for key, value in content.items():
+                    unique = np.unique(value)
+                    if len(unique)==1:
+                        content[key] = unique[0]
+                res = dict(_decode_type=typename, _content=content)
+            elif isinstance(obj, pd.Series):
+                res = dict(_decode_type=typename, _content=obj.to_dict())
+            if res:
+                return res
+        if "int" == type(obj).__name__[:3]:
+            return int(obj)
+        if "float" == type(obj).__name__[:5]:
+            return float(obj)
         return json.JSONEncoder.default(self, obj)
 
 
@@ -38,13 +53,15 @@ def serialize(data):
     try:
         res = json.dumps(data, cls=BetterEncoder).encode('utf-8')
     except (TypeError, ValueError) as e:
-        raise Exception('You can only send JSON-serializable data')
+        raise Exception('You can only send JSON-serializable data. Error is : %s' % e)
     return res
 
 
 def deserialize(data):
+    if type(data) == bytes:
+        data = data.decode('utf-8')
     try:
-        res = json.loads(data.decode('utf-8'), cls=BetterDecoder)
+        res = json.loads(data, cls=BetterDecoder)
     except (TypeError, ValueError) as e:
         raise Exception('Data received was not in JSON format')
     return res

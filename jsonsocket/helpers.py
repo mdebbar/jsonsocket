@@ -1,5 +1,7 @@
+import sys
 from time import time
 
+from jsonsocket.constants import python3
 from jsonsocket.errors import IncorrectLength
 from jsonsocket.serialize import serialize, deserialize
 from socket import timeout as tmout
@@ -19,11 +21,14 @@ def send(socket, data, socket_type="tcp", *args):
         # send the serialized data
         socket.sendall(serialized)
     elif socket_type == "udp":
-        content = message + serialized + "\n"
+        padding = "\n"
+        if python3:
+            padding = bytes(padding, "utf-8")
+        content = message + serialized + padding
         socket.sendto(content, args)
 
 
-def receive(socket, socket_type="tcp", timeout=None):
+def receive(socket, socket_type="tcp", timeout=None, skip_size_info=False):
     # read the length of the data, letter by letter until we reach EOL
     length_str = ''
     tcp = socket_type == "tcp"
@@ -49,9 +54,12 @@ def receive(socket, socket_type="tcp", timeout=None):
             socket.settimeout(timeout)
         try:
             char, addr = socket.recvfrom(2048 ** 2)
-            length, char = char.split("\n")[:2]
-            if len(char) != int(length):
-                raise IncorrectLength(char,length)
+            if type(char)==bytes:
+                char = char.decode("utf-8")
+            if not skip_size_info:
+                length, char = char.split("\n")[:2]
+                if len(char) != int(length):
+                    raise IncorrectLength(char,length)
             deserialized = deserialize(char)
             return deserialized, addr
         except tmout:

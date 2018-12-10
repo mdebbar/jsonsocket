@@ -10,7 +10,7 @@ class UDP(object):
     def __init__(self):
         self.__threads = [None, None]  # receive and advertise
 
-    def receive(self, host, port, timeout=None):
+    def receive(self, host, port, timeout=None, **kwargs):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         if host == broadcast_address:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -19,7 +19,7 @@ class UDP(object):
             s.bind((host, port))
         except socket.error:
             raise Exception("Address %s:%i already in use" % (host,port))
-        data, addr = _recv(s, timeout=timeout,socket_type="udp")
+        data, addr = _recv(s, timeout=timeout,socket_type="udp", **kwargs)
         return data, addr
 
     def send(self, data, ip, port):

@@ -148,6 +148,8 @@ class ServerAsync(Thread):
                         break
                     if data is not None:
                         self.new_message_callback(data, self)
+                    else:
+                        break
                 if self.client_disconnect_callback:
                     self.client_disconnect_callback(client_addr, self)
         except Exception as e:

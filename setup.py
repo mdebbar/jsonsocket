@@ -9,4 +9,5 @@ setup(
     author='github',
     author_email='',
     packages=[name],  #same as name
+    requirements=["schedule"]
 )

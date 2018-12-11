@@ -98,7 +98,12 @@ class Client(object):
     def send(self, data):
         if not self.socket:
             raise ConnectFirst()
-        _send(self.socket, data, socket_type="tcp")
+        try:
+            _send(self.socket, data, socket_type="tcp")
+        except socket.error as e:
+            if "reset by peer" in e.message:
+                raise NoClient()
+            raise
         return self
 
     def recv(self, **kwargs):

@@ -25,7 +25,10 @@ class Server(object):
     def __init__(self, host, port):
         self.socket = socket.socket()
         self.socket.bind((host, port))
+        self.host=host
+        self.port=port
         self.socket.listen(self.backlog)
+        self.__accepting=False
 
     def __del__(self):
         self.close()
@@ -34,11 +37,17 @@ class Server(object):
     def client_connected(self):
         return self.client is not None
 
+    @property
+    def accepting_connexions(self):
+        return self.__accepting
+
     def accept(self):
         # if a client is already connected, disconnect it
         if self.client:
             self.client.close()
+        self.__accepting = True
         self.client, self.client_addr = self.socket.accept()
+        self.__accepting = False
         return self
 
     def send(self, data):
@@ -63,6 +72,10 @@ class Server(object):
             self.client.close()
             self.client = None
         if self.socket:
+            if self.accepting_connexions:
+                c = Client()
+                c.connect("localhost", self.port)
+                c.close()
             self.socket.close()
             self.socket = None
 
@@ -136,6 +149,7 @@ class ServerAsync(Thread):
 
     def stop(self):
         self.__running = False
+        self.server.close()
 
     def run(self):
         try:
@@ -143,6 +157,7 @@ class ServerAsync(Thread):
 
             while self.__running:
                 self.server.accept()
+                if not self.__running: break
                 client_addr = self.server.client_addr
                 if self.new_client_callback:
                     self.new_client_callback(client_addr, self)

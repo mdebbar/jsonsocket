@@ -56,10 +56,13 @@ def receive(socket, socket_type="tcp", timeout=None, skip_size_info=False):
             char, addr = socket.recvfrom(2048 ** 2)
             if type(char)==bytes:
                 char = char.decode("utf-8")
-            if not skip_size_info:
-                length, char = char.split("\n")[:2]
-                if len(char) != int(length):
-                    raise IncorrectLength(char,length)
+            try:
+                if not skip_size_info:
+                    length, char = char.split("\n")[:2]
+                    if len(char) != int(length):
+                        raise IncorrectLength(char,length)
+            except ValueError:
+                pass
             deserialized = deserialize(char)
             return deserialized, addr
         except tmout:
